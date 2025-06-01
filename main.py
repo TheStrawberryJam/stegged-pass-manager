@@ -133,11 +133,22 @@ class PasswordManagerApp:
     def save_to_image(self):
         json_data = json.dumps(self.data)
         encrypted = encrypt(json_data, self.password)
-        os.remove(self.image_path + '.steg') if os.path.exists(self.image_path + '.steg') else None
-        with open(self.image_path, 'rb') as original, open(self.image_path + '.steg', 'wb') as out:
-            out.write(original.read())
-            out.write(b'\n###DATA###\n')
-            out.write(encrypted)
+
+        # Read the original image content up to where the data might be
+        original_content = b''
+        try:
+            with open(self.image_path, 'rb') as f:
+                content_before_data = f.read().split(b'###DATA###')[0]
+                original_content = content_before_data
+        except FileNotFoundError:
+            messagebox.showerror("Error", "Original image not found!")
+            return
+
+        # Overwrite the original image
+        with open(self.image_path, 'wb') as f:
+            f.write(original_content) # Write the original image data without the old embedded data
+            f.write(b'\n###DATA###\n')
+            f.write(encrypted)
         messagebox.showinfo("Saved", f"Data saved to: {self.image_path}")
 
     def clear_root(self):
